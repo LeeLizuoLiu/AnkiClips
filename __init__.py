@@ -1,9 +1,9 @@
-from pydub import AudioSegment 
-from pydub.silence import split_on_silence 
+from .pydub import AudioSegment 
+from .pydub.silence import split_on_silence 
 import sys
 import time
 import os
-from aip import AipSpeech
+from .aip import AipSpeech
 import subprocess
 
 def main(): 
