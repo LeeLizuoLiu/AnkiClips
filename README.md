@@ -7,7 +7,7 @@ An anki addon to create audio flashcards
 # Dependencies
 ffmpeg
 
-- Windows
+- Windows  
 Download [builds](https://ffmpeg.zeranoe.com/builds/)
 
 - linux
