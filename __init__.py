@@ -28,9 +28,9 @@ def main():
         name = file.split('.')
         subprocess.call(['ffmpeg', '-y', '-i', path+'/'+name[0]+'.mp3',\
                          '-acodec', 'pcm_s16le', '-f', 's16le', '-ac', '1', '-ar', "16000", path+'/'+name[0]+'.pcm'])
-    pcmlist = getfilelist('..',pcm=True)
+    pcmlist = getfilelist('./chunks',pcm=True)
 #    for pcmfile in pcmlist:
-#        client.asr(get_file_content(pcmfile), 'pcm', 16000, {'dev_pid': 1737,})
+#        client.asr(get_file_content('./chunks/'+pcmfile), 'pcm', 16000, {'dev_pid': 1737,})
 
 
 def get_file_content(filePath):
