@@ -1,0 +1,1 @@
+{"config": {"model": "NoteTypeName", "target_fields": ["audio", "text", "vocabulary"]}}

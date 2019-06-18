@@ -54,11 +54,132 @@ def audio_segRecoCrt():
             clip_name = pcmfile.split('.')
             text[clip_name[0]] = text_temp["result"]
         else: 
-            print(text_temp["err_msg"])
+            raise RuntimeError(text_temp["err_msg"])
+            
     
+    MODEL = "NoteTypeName"
+    target_fields = ["audio", "text", "vocabulary"]
+    config = mw.addonManager.getConfig(__name__)
+    if config:
+        MODEL = config['model']
+        target_fields = config['target_fields']
+    else:
+        msg = """
+        AnkiClips:
+        The add-on missed the configuration file.
+        If you would not get the right feeds,
+        please reinstall this add-on."""
+        utils.showWarning(msg)    
+
+    msg = ""
+    mw.progress.start(immediate=True)
+    for i in range(len(feeds_info)):
+        msg += feeds_info[i]["DECK"] + ":\n"
+        msg += buildCard(**feeds_info[i]) + "\n"
+    mw.progress.finish()
+    utils.showText(msg)
 
 
+def addFeedModel(col):
+    # add the model for feeds
+    mm = col.models
+    m = mm.new(MODEL)
+    for f in target_fields:
+        fm = mm.newField(f)
+        mm.addField(m, fm)
+    t = mm.newTemplate("Card 1")
+    t['qfmt'] = "<div class =\"card_audio\"><div class =\"section h2 \" >"+\
+        "<div class=\"text\"  id=\"front\">{{text}}</div></div>{{#vocabulary}}<hr class=\"def\">" +\
+        "<div class =\"section h2 \"><div class=\"vocabulary\" id=\"front\">{{vocabulary}}"+\
+	    "</div></div></hr>{{/vocabulary}}<div class =\"audio_section h1\"><button id =\"play\">"+\
+        "<span class=\"stop_img\"><img class=\"space\" src=\"_space.png\" ></button>{{audio}}</div></div>"
+    t['afmt'] = "<div class =\"card_audio \"><div class =\"section h2 \"><div class=\"text\">"+\
+             "{{text}}</div></div>{{#vocabulary}}<hr class=\"def\"><div class =\"section h2\">"+\
+	       "<div class=\"vocabulary\">{{vocabulary}}</div></div></hr>{{/vocabulary}}"+\
+        "<div class =\"audio_section h1\"><button id =\"play\"><span class=\"stop_img\">"+\
+       "<img class=\"space\" src=\"_space.png\"></button>{{audio}}</div></div>"
+    mm.addTemplate(m, t)
+    mm.add(m)
+    return m
+def buildCard(**kw):
+    # get deck and model
+    deck  = mw.col.decks.get(mw.col.decks.id(kw['DECK']))
+    model = mw.col.models.byName(MODEL)
 
+    # if MODEL doesn't exist, create a MODEL
+    if model is None:
+        model = addFeedModel(mw.col)
+        model['name'] = MODEL
+    else:
+        act_name = set([f['name'] for f in model['flds']])
+        std_name = set(target_fields)
+        if not len(act_name & std_name) == 2:
+            model['name'] = MODEL + "-" + model['id']
+            model = addFeedModel(mw.col)
+            model['name'] = MODEL
+
+    # assign model to deck
+    mw.col.decks.select(deck['id'])
+    mw.col.decks.get(deck)['mid'] = model['id']
+    mw.col.decks.save(deck)
+
+    # assign deck to model
+    mw.col.models.setCurrent(model)
+    mw.col.models.current()['did'] = deck['id']
+    mw.col.models.save(model)
+
+    # retrieve rss
+    data, errmsg = getFeed(kw['URL'])
+    if errmsg:
+        return errmsg
+
+    #parse xml
+    doc = BeautifulSoup(data, "html.parser")
+
+    if not doc.find('item') is None:
+        items = doc.findAll('item')
+        feed = "rss"
+    elif not doc.find('entry') is None:
+        items = doc.findAll('entry')
+        feed = "atom"
+    else:
+        return
+
+    # iterate notes
+    dups = 0
+    adds = 0
+    for item in items:
+        note = mw.col.newNote()
+        note[target_fields[0]] = item.title.text
+        nounique = note.dupeOrEmpty()
+        if nounique:
+            if nounique == 2:
+                dups += 1
+            continue
+        if feed == "rss":
+            if not item.description is None:
+                note[target_fields[1]] = item.description.text
+        if feed == "atom":
+            if not item.content is None:
+                note[target_fields[1]] = item.content.text
+            elif not item.summary is None:
+                note[target_fields[1]] = item.summary.text
+        note.tags = filter(None, kw['tags'])
+        mw.col.addNote(note)
+        adds += 1
+
+    mw.col.reset()
+    mw.reset()
+
+    # show result
+    msg = ngettext("%d note added", "%d notes added", adds) % adds
+    msg += "\n"
+    if dups > 0:
+        msg += _("<ignored>") + "\n"
+        msg += _("duplicate") + ": "
+        msg += ngettext("%d note", "%d notes", dups) % dups
+        msg += "\n"
+    return msg
 
 def get_file_content(filePath):
     with open(filePath, 'rb') as fp:
