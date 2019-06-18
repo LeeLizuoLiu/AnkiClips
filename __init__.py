@@ -9,7 +9,9 @@ from anki.notes import Note
 from aqt import mw
 from aqt.utils import getFile, showInfo, showText
 from aqt.qt import *
+from aqt.profiles import ProfileManager
 from collections import namedtuple
+from shutil import copy
 
 def audio_segReco(name,sound):
     # Setting specifications 
@@ -37,8 +39,16 @@ def audio_segReco(name,sound):
             clip_name = pcmfile.split('.')
             text[clip_name[0]] = text_temp["result"]
         else: 
-            raise RuntimeError(text_temp["err_msg"])            
-    return audiolist, text   
+            raise RuntimeError(text_temp["err_msg"])
+    #Delete .pcm file
+    for pcmfile in pcmlist:
+        os.remove('chunks/'+pcmfile)
+    collectionpath = ProfileManager.collectionPath()
+    #Copy .mp3 files to collection.media
+    for audiofile in audiolist:
+        copy('chunks/'+audiofile,collectionpath)
+    print("Clips have been copied to collection.media")                
+    return text   
 
 def createCards():
     path = getFile(mw, 'Open audio files', cb=None, filter='Audio file (*.mp3,*.wav)', key='Audios')
@@ -52,14 +62,20 @@ def createCards():
             raise RuntimeError(f'Unknown audio types in path: {path!r}')
     else:
         raise RuntimeError('No audio selected!')
-    audiolist, text = audio_segReco(path,sound)
+    text = audio_segReco(path,sound)
 
-    MODEL = "NoteTypeName"
-    target_fields = ["audio", "text", "vocabulary"]
+    msg = ""
+    mw.progress.start(immediate=True)
+    msg += buildCard(text) + "\n"
+    mw.progress.finish()
+    utils.showText(msg)
+
+def buildCard(text):
     config = mw.addonManager.getConfig(__name__)
     if config:
         MODEL = config['model']
         target_fields = config['target_fields']
+        Deck = config['Deck']
     else:
         msg = """
         AnkiClips:
@@ -68,17 +84,8 @@ def createCards():
         please reinstall this add-on."""
         utils.showWarning(msg)    
 
-    msg = ""
-    mw.progress.start(immediate=True)
-    for i in range(len(feeds_info)):
-        msg += feeds_info[i]["DECK"] + ":\n"
-        msg += buildCard(audiolist,text,**feeds_info[i]) + "\n"
-    mw.progress.finish()
-    utils.showText(msg)
-
-def buildCard(audiolist,text,**kw):
     # get deck and model
-    deck  = mw.col.decks.get(mw.col.decks.id(kw['DECK']))
+    deck  = mw.col.decks.get(mw.col.decks.id(Deck))
     model = mw.col.models.byName(MODEL)
 
     # assign model to deck
@@ -92,25 +99,11 @@ def buildCard(audiolist,text,**kw):
     mw.col.models.save(model)
 
     # iterate notes
-    dups = 0
     adds = 0
-    for item in items:
+    for key in text.keys():
         note = mw.col.newNote()
-        note[target_fields[0]] = item.title.text
-        nounique = note.dupeOrEmpty()
-        if nounique:
-            if nounique == 2:
-                dups += 1
-            continue
-        if feed == "rss":
-            if not item.description is None:
-                note[target_fields[1]] = item.description.text
-        if feed == "atom":
-            if not item.content is None:
-                note[target_fields[1]] = item.content.text
-            elif not item.summary is None:
-                note[target_fields[1]] = item.summary.text
-        note.tags = filter(None, kw['tags'])
+        note["audio"] = "[sound:"+key+".mp3]"
+        note["text"] = text[key]
         mw.col.addNote(note)
         adds += 1
 
@@ -120,11 +113,6 @@ def buildCard(audiolist,text,**kw):
     # show result
     msg = ngettext("%d note added", "%d notes added", adds) % adds
     msg += "\n"
-    if dups > 0:
-        msg += _("<ignored>") + "\n"
-        msg += _("duplicate") + ": "
-        msg += ngettext("%d note", "%d notes", dups) % dups
-        msg += "\n"
     return msg
 
 def get_file_content(filePath):
@@ -182,9 +170,9 @@ def prepare_for_baiduaip(name,sound,silence_thresh=-65,min_silence_len=700,\
     chunks = chunk_join_length_limit(chunks,joint_silence_len=joint_silence_len,length_limit=length_limit) 
     
     if not os.path.exists('./chunks'):os.mkdir('./chunks') 
-    namef,namec = os.path.splitext(name)
+    namef,_ = os.path.splitext(name)
     name_last = namef.split('\\') 
-    namec = namec[1:] 
+    namec = "mp3" 
     namef = name_last[-1]
 
     total = len(chunks) 
@@ -193,7 +181,7 @@ def prepare_for_baiduaip(name,sound,silence_thresh=-65,min_silence_len=700,\
         save_name = '%s_%04d.%s'%(namef,i,namec) 
         new.export('./chunks/'+save_name, format=namec) 
         print('%04d'%i,len(new))
-    print('Clips have already been Saved.')
+    print('Clips have already been Saved into dir ./chunks.')
     
     return total
 
