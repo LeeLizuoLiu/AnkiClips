@@ -11,23 +11,7 @@ from aqt.utils import getFile, showInfo, showText
 from aqt.qt import *
 from collections import namedtuple
 
-
-
-
-def audio_segRecoCrt():
- 
-    path = getFile(mw, 'Open audio files', cb=None, filter='Audio file (*.mp3,*.wav)', key='Audio_clips')
-
-    if path:
-        lower_path = path.lower()
-        if lower_path.endswith('mp3'):
-            sound = AudioSegment.from_mp3(path) 
-        elif lower_path.endswith('wav'):
-            sound = AudioSegment.from_wav(path) 
-        else:
-            raise RuntimeError(f'Unknown audio types in path: {path!r}')
-    else:
-        raise RuntimeError('No audio selected!')
+def audio_segReco(name,sound):
     # Setting specifications 
     silence_thresh=-70 # silent threshold 
     min_silence_len=300 # silence length 
@@ -38,7 +22,6 @@ def audio_segRecoCrt():
     # Segmentations 
     total = prepare_for_baiduaip(name,sound,silence_thresh\
                                  ,min_silence_len,length_limit,abandon_chunk_len,joint_silence_len)
-
     client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
     path = './chunks'
     audiolist = getfilelist(path,pcm=False)
@@ -54,9 +37,23 @@ def audio_segRecoCrt():
             clip_name = pcmfile.split('.')
             text[clip_name[0]] = text_temp["result"]
         else: 
-            raise RuntimeError(text_temp["err_msg"])
-            
-    
+            raise RuntimeError(text_temp["err_msg"])            
+    return audiolist, text   
+
+def createCards():
+    path = getFile(mw, 'Open audio files', cb=None, filter='Audio file (*.mp3,*.wav)', key='Audios')
+    if path:
+        lower_path = path.lower()
+        if lower_path.endswith('mp3'):
+            sound = AudioSegment.from_mp3(path) 
+        elif lower_path.endswith('wav'):
+            sound = AudioSegment.from_wav(path) 
+        else:
+            raise RuntimeError(f'Unknown audio types in path: {path!r}')
+    else:
+        raise RuntimeError('No audio selected!')
+    audiolist, text = audio_segReco(path,sound)
+
     MODEL = "NoteTypeName"
     target_fields = ["audio", "text", "vocabulary"]
     config = mw.addonManager.getConfig(__name__)
@@ -75,11 +72,11 @@ def audio_segRecoCrt():
     mw.progress.start(immediate=True)
     for i in range(len(feeds_info)):
         msg += feeds_info[i]["DECK"] + ":\n"
-        msg += buildCard(**feeds_info[i]) + "\n"
+        msg += buildCard(audiolist,text,**feeds_info[i]) + "\n"
     mw.progress.finish()
     utils.showText(msg)
 
-def buildCard(**kw):
+def buildCard(audiolist,text,**kw):
     # get deck and model
     deck  = mw.col.decks.get(mw.col.decks.id(kw['DECK']))
     model = mw.col.models.byName(MODEL)
@@ -93,23 +90,6 @@ def buildCard(**kw):
     mw.col.models.setCurrent(model)
     mw.col.models.current()['did'] = deck['id']
     mw.col.models.save(model)
-
-    # retrieve rss
-    data, errmsg = getFeed(kw['URL'])
-    if errmsg:
-        return errmsg
-
-    #parse xml
-    doc = BeautifulSoup(data, "html.parser")
-
-    if not doc.find('item') is None:
-        items = doc.findAll('item')
-        feed = "rss"
-    elif not doc.find('entry') is None:
-        items = doc.findAll('entry')
-        feed = "atom"
-    else:
-        return
 
     # iterate notes
     dups = 0
@@ -284,5 +264,5 @@ def chunk_join_length_limit(chunks,joint_silence_len=1300,length_limit=60*1000):
 
 
 action = QAction('Create audio flashcards...', mw)
-action.triggered.connect(audio_segRecoCrt)
+action.triggered.connect(createCards)
 mw.form.menuTools.addAction(action)
