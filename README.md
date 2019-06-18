@@ -1,6 +1,6 @@
 # AnkiClips
 An anki addon to create audio flashcards
-- Step 1: Clip by silence
+- Step 1: Segment by silence
 - Step 2: UI
 - Step 3: Add function to make flashcards
 
