@@ -5,15 +5,33 @@ import time
 import os
 from .aip import AipSpeech
 import subprocess
+from anki.notes import Note
+from aqt import mw
+from aqt.utils import getFile, showInfo, showText
+from aqt.qt import *
+from collections import namedtuple
 
-def main(): 
-    # Importing mp3 file 
-    name = 'Brexit.mp3' 
-    sound = AudioSegment.from_mp3(name) 
+
+
+
+def audio_segRecoCrt():
+ 
+    path = getFile(mw, 'Open audio files', cb=None, filter='Audio file (*.mp3,*.wav)', key='Audio_clips')
+
+    if path:
+        lower_path = path.lower()
+        if lower_path.endswith('mp3'):
+            sound = AudioSegment.from_mp3(path) 
+        elif lower_path.endswith('wav'):
+            sound = AudioSegment.from_wav(path) 
+        else:
+            raise RuntimeError(f'Unknown audio types in path: {path!r}')
+    else:
+        raise RuntimeError('No audio selected!')
     # Setting specifications 
     silence_thresh=-70 # silent threshold 
     min_silence_len=300 # silence length 
-    length_limit=15.33*1000 # The clip length limit after segmentation 
+    length_limit=10.33*1000 # The clip length limit after segmentation 
     abandon_chunk_len=100 #  Discard the clips whose length is smaller than abandon_chunk_len ms 
     joint_silence_len=10 # The joint silence length when connect 2 clips 
     
@@ -21,16 +39,25 @@ def main():
     total = prepare_for_baiduaip(name,sound,silence_thresh\
                                  ,min_silence_len,length_limit,abandon_chunk_len,joint_silence_len)
 
-    # client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
+    client = AipSpeech(APP_ID, API_KEY, SECRET_KEY)
     path = './chunks'
-    wavlist = getfilelist(path,pcm=False)
-    for file in wavlist:
-        name = file.split('.')
-        subprocess.call(['ffmpeg', '-y', '-i', path+'/'+name[0]+'.mp3',\
-                         '-acodec', 'pcm_s16le', '-f', 's16le', '-ac', '1', '-ar', "16000", path+'/'+name[0]+'.pcm'])
+    audiolist = getfilelist(path,pcm=False)
+    for file in audiolist:
+        audioname = file.split('.')
+        subprocess.call(['ffmpeg', '-y', '-i', path+'/'+audioname[0]+'.mp3',\
+                         '-acodec', 'pcm_s16le', '-f', 's16le', '-ac', '1', '-ar', "16000", path+'/'+audioname[0]+'.pcm'])
     pcmlist = getfilelist('./chunks',pcm=True)
-#    for pcmfile in pcmlist:
-#        client.asr(get_file_content('./chunks/'+pcmfile), 'pcm', 16000, {'dev_pid': 1737,})
+    text = dict()
+    for pcmfile in pcmlist:
+        text_temp = client.asr(get_file_content('./chunks/'+pcmfile), 'pcm', 16000, {'dev_pid': 1737,})
+        if text_temp["err_no"]==0:
+            clip_name = pcmfile.split('.')
+            text[clip_name[0]] = text_temp["result"]
+        else: 
+            print(text_temp["err_msg"])
+    
+
+
 
 
 def get_file_content(filePath):
@@ -88,9 +115,10 @@ def prepare_for_baiduaip(name,sound,silence_thresh=-65,min_silence_len=700,\
     chunks = chunk_join_length_limit(chunks,joint_silence_len=joint_silence_len,length_limit=length_limit) 
     
     if not os.path.exists('./chunks'):os.mkdir('./chunks') 
-    namef,namec = os.path.splitext(name) 
+    namef,namec = os.path.splitext(name)
+    name_last = namef.split('\\') 
     namec = namec[1:] 
-    
+    namef = name_last[-1]
 
     total = len(chunks) 
     for i in range(total): 
@@ -166,5 +194,8 @@ def chunk_join_length_limit(chunks,joint_silence_len=1300,length_limit=60*1000):
             temp=chunk 
     adjust_chunks.append(temp) 
     return adjust_chunks
-if __name__ == '__main__': 
-    main()
+
+
+action = QAction('Create audio flashcards...', mw)
+action.triggered.connect(audio_segRecoCrt)
+mw.form.menuTools.addAction(action)
