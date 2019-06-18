@@ -47,6 +47,7 @@ def audio_segReco(name,sound):
     #Copy .mp3 files to collection.media
     for audiofile in audiolist:
         copy('chunks/'+audiofile,collectionpath)
+        os.remove('chunks/'+audiofile)
     print("Clips have been copied to collection.media")                
     return text   
 
