@@ -79,44 +79,10 @@ def audio_segRecoCrt():
     mw.progress.finish()
     utils.showText(msg)
 
-
-def addFeedModel(col):
-    # add the model for feeds
-    mm = col.models
-    m = mm.new(MODEL)
-    for f in target_fields:
-        fm = mm.newField(f)
-        mm.addField(m, fm)
-    t = mm.newTemplate("Card 1")
-    t['qfmt'] = "<div class =\"card_audio\"><div class =\"section h2 \" >"+\
-        "<div class=\"text\"  id=\"front\">{{text}}</div></div>{{#vocabulary}}<hr class=\"def\">" +\
-        "<div class =\"section h2 \"><div class=\"vocabulary\" id=\"front\">{{vocabulary}}"+\
-	    "</div></div></hr>{{/vocabulary}}<div class =\"audio_section h1\"><button id =\"play\">"+\
-        "<span class=\"stop_img\"><img class=\"space\" src=\"_space.png\" ></button>{{audio}}</div></div>"
-    t['afmt'] = "<div class =\"card_audio \"><div class =\"section h2 \"><div class=\"text\">"+\
-             "{{text}}</div></div>{{#vocabulary}}<hr class=\"def\"><div class =\"section h2\">"+\
-	       "<div class=\"vocabulary\">{{vocabulary}}</div></div></hr>{{/vocabulary}}"+\
-        "<div class =\"audio_section h1\"><button id =\"play\"><span class=\"stop_img\">"+\
-       "<img class=\"space\" src=\"_space.png\"></button>{{audio}}</div></div>"
-    mm.addTemplate(m, t)
-    mm.add(m)
-    return m
 def buildCard(**kw):
     # get deck and model
     deck  = mw.col.decks.get(mw.col.decks.id(kw['DECK']))
     model = mw.col.models.byName(MODEL)
-
-    # if MODEL doesn't exist, create a MODEL
-    if model is None:
-        model = addFeedModel(mw.col)
-        model['name'] = MODEL
-    else:
-        act_name = set([f['name'] for f in model['flds']])
-        std_name = set(target_fields)
-        if not len(act_name & std_name) == 2:
-            model['name'] = MODEL + "-" + model['id']
-            model = addFeedModel(mw.col)
-            model['name'] = MODEL
 
     # assign model to deck
     mw.col.decks.select(deck['id'])
