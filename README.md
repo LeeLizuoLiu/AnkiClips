@@ -14,7 +14,6 @@ extract and add path/to/ffmpeg.exe(like C:\Program Files\ffmpeg\bin) to system p
 
 # Install 
 - Download .zip file and extract to addons21/  
-- Import audioflashcards.apkg
 
 # Possible bugs
 May pop up windows when using ffmpeg
