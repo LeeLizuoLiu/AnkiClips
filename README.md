@@ -6,7 +6,8 @@ An anki addon to create audio flashcards.Automatic split an audio by silences an
 ffmpeg
 
 - Windows  
-Download [builds](https://ffmpeg.zeranoe.com/builds/) extract and add path/to/ffmpeg.exe(like C:\Program Files\ffmpeg\bin) to system path.
+Download [builds](https://ffmpeg.zeranoe.com/builds/)  
+extract and add path/to/ffmpeg.exe(like C:\Program Files\ffmpeg\bin) to system path.
 
 - linux
 - OSx
