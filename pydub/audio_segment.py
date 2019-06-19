@@ -14,7 +14,7 @@ from collections import namedtuple
 
 try:
     from StringIO import StringIO
-except:
+except ImportError:
     from io import StringIO
 
 from io import BytesIO

@@ -1,1 +1,1 @@
-{"config": {"model": "NoteTypeName", "target_fields": ["audio", "text", "vocabulary"]}}
+{"config":{"Deck":"Audio_cards","model":"Anki_Clip_Notetype","target_fields":["audio","text","vocabulary"]}}

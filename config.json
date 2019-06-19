@@ -1,1 +1,1 @@
-{"Deck":"Audio_cards","model":"Feed_to_Anki","target_fields":["audio","text","vocabulary"]}
+{"Deck":"Audio_cards","model":"Anki_Clip_Notetype","target_fields":["audio","text","vocabulary"]}
