@@ -7,6 +7,7 @@ from aqt import mw
 from aqt.utils import getFile, showInfo, showText
 from aqt.qt import *
 from . import utils
+from anki.lang import ngettext
 
 class AnkiClipsWindow(QWidget):
     
@@ -94,9 +95,7 @@ class AnkiClipsWindow(QWidget):
             self.thread.wait(50)
 
         msg = ""
-        mw.progress.start(immediate=True)
         msg += self.buildCard(self.thread.text) + "\n"
-        mw.progress.finish()
         self.label_results.setText(msg)
 
         self.thread.terminate()
@@ -181,8 +180,10 @@ class Audioseperator(QThread):
         audiolist = utils.getfilelist(path,pcm=False)
         for file in audiolist:
             audioname = file.split('.')
+            DETACHED_PROCESS = 0x00000008
             utils.subprocess.call(['ffmpeg', '-y', '-i', path+'/'+audioname[0]+'.mp3',\
-                            '-acodec', 'pcm_s16le', '-f', 's16le', '-ac', '1', '-ar', "16000", path+'/'+audioname[0]+'.pcm'])
+                            '-acodec', 'pcm_s16le', '-f', 's16le', '-ac', '1', '-ar', "16000",\
+                                path+'/'+audioname[0]+'.pcm'],creationflags=DETACHED_PROCESS)
         pcmlist = utils.getfilelist('./chunks',pcm=True)
         text = dict()
         for pcmfile in pcmlist:
@@ -208,5 +209,23 @@ class Audioseperator(QThread):
 
 
 def runAnkiClipsPlugin():
+    config = mw.addonManager.getConfig(__name__)
+    apkgpath = utils.os.path.join(mw.addonManager.addonsFolder(__name__.split('.')[0]), "audioFlashcards.apkg")    
+    if config:
+        MODEL = config['model']
+    else:
+        msg = """
+            AnkiClips:
+            The add-on missed the configuration file.
+            If you would not get the right feeds,
+            please reinstall this add-on."""
+        utils.showWarning(msg) 
+    
+    model = mw.col.models.byName(MODEL)
+
+    # if MODEL doesn't exist, import a MODEL
+    if model is None:
+        from aqt import importing 
+        importing.importFile(mw,apkgpath)
     global __window
     __window = AnkiClipsWindow()
