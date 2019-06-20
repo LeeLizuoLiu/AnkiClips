@@ -14,10 +14,9 @@ class AnkiClipsWindow(QWidget):
     # main window of AnkiClips plugin
     def __init__(self):
         super(AnkiClipsWindow, self).__init__()
-
         self.results = None
         self.thread = None
-
+        self.path = None
         self.initGUI()
 
     # create GUI skeleton
