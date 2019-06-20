@@ -81,8 +81,8 @@ class AnkiClipsWindow(QWidget):
         self.text_url.setText(self.path)
 
     def onCode(self):
-        self.path = self.text_url.text()
-
+        if self.path == None:
+            self.path = self.text_url.text().replace('\\','/')
         if not self.thread == None:
             self.thread.terminate()
 
