@@ -79,8 +79,10 @@ class AnkiClipsWindow(QWidget):
     def selectFile(self):
         self.path = getFile(mw, 'Open audio files', cb=None, filter="*.mp3", key='Audios')
         self.text_url.setText(self.path)
+        self.label_results.setText("Click Create... to create audio flashcards")        
 
     def onCode(self):
+        start_time = time.time()
         if self.path == None:
             self.path = self.text_url.text().replace('\\','/')
         if not self.thread == None:
@@ -95,7 +97,9 @@ class AnkiClipsWindow(QWidget):
             self.thread.wait(50)
 
         msg = ""
-        msg += self.buildCard(self.thread.text) + "\n"
+        msg += self.buildCard(self.thread.text) 
+        end_time = time.time()
+        msg += "Used " + str(round(end_time-start_time,2)) + " s\n"
         self.label_results.setText(msg)
 
         self.thread.terminate()
