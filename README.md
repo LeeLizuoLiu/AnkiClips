@@ -16,4 +16,6 @@ extract and add path/to/ffmpeg.exe(like C:\Program Files\ffmpeg\bin) to system p
 - Download .zip file and extract to addons21/  
 
 # Possible bugs
-May pop up windows when using ffmpeg
+- May pop up console windows when processing  
+- Without punturation  
+- There could be some wrong recognized vocabularies.
