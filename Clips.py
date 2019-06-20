@@ -28,7 +28,7 @@ class AnkiClipsWindow(QWidget):
         # left side
         self.box_left = QVBoxLayout()
 
-        # quizlet url field
+        # path field
         self.box_name = QHBoxLayout()
         self.label_url = QLabel("Audio path:")
         self.text_url = QLineEdit("",self)
@@ -62,7 +62,7 @@ class AnkiClipsWindow(QWidget):
         self.box_upper.addLayout(self.box_right)
 
         # results label
-        self.label_results = QLabel("")
+        self.label_results = QLabel("Input audio's absolute path or click Browse...")
 
         # add all widgets to top layout
         self.box_top.addLayout(self.box_upper)
@@ -81,6 +81,7 @@ class AnkiClipsWindow(QWidget):
         self.text_url.setText(self.path)
 
     def onCode(self):
+        self.path = self.text_url.text()
 
         if not self.thread == None:
             self.thread.terminate()
