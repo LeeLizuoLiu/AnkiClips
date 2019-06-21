@@ -95,12 +95,10 @@ class AnkiClipsWindow(QWidget):
         while not self.thread.isFinished():
             mw.app.processEvents()
             self.thread.wait(50)
-        middle_time = time.time()
         msg = ""
         msg += self.buildCard(self.thread.text) 
         end_time = time.time()
-        msg += "Segmentation used " + str(round(middle_time-start_time,2)) + " s\n"
-        msg += "Audio recognition used " + str(round(end_time-middle_time,2)) + " s\n"
+        msg += "Segmentation and Audio recognition used " + str(round(end_time-start_time,2)) + " s\n"
         self.label_results.setText(msg)
 
         self.thread.terminate()
